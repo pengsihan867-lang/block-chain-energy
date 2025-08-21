@@ -1,0 +1,26 @@
+{
+  "name": "vpp-energy-trading-system",
+  "version": "2.0.0",
+  "description": "Advanced VPP Energy Trading System with Weather API, VPP Optimization, and MetaMask Integration",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ethers": "^6.8.1",
+    "@metamask/detect-provider": "^2.0.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.4",
+    "vite": "^4.4.0",
+    "@types/node": "^20.4.0"
+  },
+  "keywords": ["vpp", "energy", "trading", "blockchain", "metamask", "weather"],
+  "author": "Your Name",
+  "license": "MIT"
+}

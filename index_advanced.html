@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏭 VPP Energy Trading System - Advanced with Weather & MetaMask</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-shadow { box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+        .hourly-bar { transition: all 0.3s ease; }
+        .hourly-bar:hover { transform: scaleY(1.1); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .slide-in { animation: slideIn 0.5s ease; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-gray-800">
+    <!-- Wallet Connect Button -->
+    <div class="fixed top-4 right-4 z-50">
+        <button id="walletConnectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+            🔗 Connect Wallet
+        </button>
+        <div id="walletInfo" class="hidden mt-2 bg-white p-3 rounded-lg shadow-lg">
+            <p class="text-sm text-gray-600">Connected: <span id="walletAddress" class="font-mono text-xs"></span></p>
+            <p class="text-sm text-gray-600">Network: <span id="walletNetwork" class="text-xs"></span></p>
+            <button id="disconnectBtn" class="text-red-600 text-xs hover:text-red-800 mt-1">Disconnect</button>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="text-center mb-8 text-white">
+            <h1 class="text-5xl font-bold mb-4 drop-shadow-lg">🏭 VPP Energy Trading System</h1>
+            <p class="text-xl opacity-90">Advanced P2P Energy Trading with Weather API & MetaMask Integration</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="space-y-6">
+            <!-- Module 1: Prosumer Management with Weather -->
+            <div class="bg-white rounded-3xl p-8 card-shadow hover-lift">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-blue-500 pb-4 flex items-center gap-3">
+                    👥 Prosumer Management with Weather Data
+                </h2>
+                <div id="prosumerContainer" class="space-y-6"></div>
+                <div class="flex gap-4 mt-6">
+                    <button onclick="addProsumer()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                        ➕ Add Prosumer
+                    </button>
+                    <button onclick="generatePrediction()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                        🔮 Generate Predictions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Module 2: AI Prediction Results -->
+            <div id="predictionCard" class="bg-white rounded-3xl p-8 card-shadow hover-lift hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-green-500 pb-4 flex items-center gap-3">
+                    🔮 AI Generation Prediction Results
+                </h2>
+                <div id="predictionResults"></div>
+            </div>
+
+            <!-- Module 3: Trading Optimization -->
+            <div id="optimizationCard" class="bg-white rounded-3xl p-8 card-shadow hover-lift hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-purple-500 pb-4 flex items-center gap-3">
+                    ⚙️ Trading Optimization Results
+                </h2>
+                <div id="optimizationResults"></div>
+            </div>
+
+            <!-- Module 4: VPP Aggregation with Pricing -->
+            <div id="vppCard" class="bg-white rounded-3xl p-8 card-shadow hover-lift hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-indigo-500 pb-4 flex items-center gap-3">
+                    🏭 VPP Aggregation & Final Pricing
+                </h2>
+                <div id="vppResults"></div>
+            </div>
+
+            <!-- Module 5: Blockchain Integration -->
+            <div id="blockchainCard" class="bg-white rounded-3xl p-8 card-shadow hover-lift hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-red-500 pb-4 flex items-center gap-3">
+                    ⛓️ Blockchain Transaction Status
+                </h2>
+                <div id="blockchainResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let prosumers = [];
+        let predictions = {};
+        let optimizationResults = {};
+        let vppResults = {};
+        let prosumerCounter = 0;
+        let walletProvider = null;
+        let walletSigner = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            addProsumer();
+            initializeWallet();
+        });
+
+        // Wallet Integration
+        async function initializeWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                walletProvider = new ethers.providers.Web3Provider(window.ethereum);
+                updateWalletButton();
+                
+                // Listen for account changes
+                window.ethereum.on('accountsChanged', function (accounts) {
+                    updateWalletButton();
+                });
+            }
+        }
+
+        async function connectWallet() {
+            try {
+                if (!walletProvider) {
+                    alert('Please install MetaMask!');
+                    return;
+                }
+                
+                await walletProvider.send("eth_requestAccounts", []);
+                walletSigner = walletProvider.getSigner();
+                updateWalletButton();
+                
+                // Show wallet info
+                const address = await walletSigner.getAddress();
+                const network = await walletProvider.getNetwork();
+                
+                document.getElementById('walletAddress').textContent = address.substring(0, 6) + '...' + address.substring(address.length - 4);
+                document.getElementById('walletNetwork').textContent = network.name;
+                document.getElementById('walletInfo').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                alert('Failed to connect wallet');
+            }
+        }
+
+        function disconnectWallet() {
+            walletSigner = null;
+            updateWalletButton();
+            document.getElementById('walletInfo').classList.add('hidden');
+        }
+
+        function updateWalletButton() {
+            const btn = document.getElementById('walletConnectBtn');
+            if (walletSigner) {
+                btn.textContent = '🔗 Wallet Connected';
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            } else {
+                btn.textContent = '🔗 Connect Wallet';
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+        }
+
+        // Add event listeners
+        document.getElementById('walletConnectBtn').addEventListener('click', connectWallet);
+        document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+
+        // Prosumer Management
+        function addProsumer() {
+            prosumerCounter++;
+            const prosumerId = `prosumer_${prosumerCounter}`;
+            
+            const prosumerForm = document.createElement('div');
+            prosumerForm.className = 'bg-gray-50 border-2 border-gray-200 rounded-2xl p-6';
+            prosumerForm.id = prosumerId;
+            
+            prosumerForm.innerHTML = `
+                <div class="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-300">
+                    <div class="text-2xl font-bold text-gray-800">Prosumer ${prosumerCounter}</div>
+                    <button onclick="removeProsumer('${prosumerId}')" class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors">×</button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">User Name</label>
+                        <input type="text" id="${prosumerId}_name" placeholder="Enter user name" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Location (City)</label>
+                        <input type="text" id="${prosumerId}_location" placeholder="e.g., New York, London" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">PV Panel Area (m²)</label>
+                        <input type="number" id="${prosumerId}_area" placeholder="e.g., 20" step="0.1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">PV Efficiency (%)</label>
+                        <input type="number" id="${prosumerId}_efficiency" placeholder="e.g., 18" min="0" max="100" step="0.1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Orientation</label>
+                        <select id="${prosumerId}_orientation" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                            <option value="east">East</option>
+                            <option value="southeast">Southeast</option>
+                            <option value="south" selected>South</option>
+                            <option value="southwest">Southwest</option>
+                            <option value="west">West</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">User Role</label>
+                        <select id="${prosumerId}_role" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                            <option value="prosumer" selected>Prosumer</option>
+                            <option value="retailer">Retailer</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Has Battery?</label>
+                        <select id="${prosumerId}_hasBattery" onchange="toggleBattery('${prosumerId}')" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Battery Capacity (kWh)</label>
+                        <input type="number" id="${prosumerId}_batteryCapacity" placeholder="e.g., 5" step="0.1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Max Buy Limit (kWh)</label>
+                        <input type="number" id="${prosumerId}_maxBuy" placeholder="e.g., 10" step="0.1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Max Sell Limit (kWh)</label>
+                        <input type="number" id="${prosumerId}_maxSell" placeholder="e.g., 15" step="0.1" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Expected Price ($/kWh)</label>
+                        <input type="number" id="${prosumerId}_price" placeholder="e.g., 0.12" step="0.01" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none" required>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('prosumerContainer').appendChild(prosumerForm);
+        }
+
+        function removeProsumer(prosumerId) {
+            document.getElementById(prosumerId).remove();
+        }
+
+        function toggleBattery(prosumerId) {
+            const hasBattery = document.getElementById(`${prosumerId}_hasBattery`).value === 'true';
+            const batteryInput = document.getElementById(`${prosumerId}_batteryCapacity`);
+            batteryInput.disabled = !hasBattery;
+            if (!hasBattery) batteryInput.value = '';
+        }
+
+        // Weather-based prediction
+        async function generatePrediction() {
+            const prosumerForms = document.querySelectorAll('[id^="prosumer_"]');
+            if (prosumerForms.length === 0) {
+                alert('Please add at least one prosumer first!');
+                return;
+            }
+
+            prosumers = [];
+            prosumerForms.forEach((form, index) => {
+                const prosumerId = form.id;
+                const prosumer = {
+                    id: prosumerId,
+                    name: document.getElementById(`${prosumerId}_name`).value || `Prosumer ${index + 1}`,
+                    location: document.getElementById(`${prosumerId}_location`).value || 'New York',
+                    area: parseFloat(document.getElementById(`${prosumerId}_area`).value) || 20,
+                    efficiency: parseFloat(document.getElementById(`${prosumerId}_efficiency`).value) || 18,
+                    orientation: document.getElementById(`${prosumerId}_orientation`).value,
+                    hasBattery: document.getElementById(`${prosumerId}_hasBattery`).value === 'true',
+                    batteryCapacity: parseFloat(document.getElementById(`${prosumerId}_batteryCapacity`).value) || 0,
+                    maxBuy: parseFloat(document.getElementById(`${prosumerId}_maxBuy`).value) || 10,
+                    maxSell: parseFloat(document.getElementById(`${prosumerId}_maxSell`).value) || 15,
+                    price: parseFloat(document.getElementById(`${prosumerId}_price`).value) || 0.12,
+                    role: document.getElementById(`${prosumerId}_role`).value
+                };
+                prosumers.push(prosumer);
+            });
+
+            // Generate weather-based predictions
+            predictions = {};
+            for (const prosumer of prosumers) {
+                predictions[prosumer.id] = await generateWeatherBasedPrediction(prosumer);
+            }
+
+            displayPredictions();
+            document.getElementById('optimizationCard').classList.remove('hidden');
+            alert('AI predictions generated successfully!');
+        }
+
+        async function generateWeatherBasedPrediction(prosumer) {
+            // Simulate weather API call
+            const weatherData = await getWeatherData(prosumer.location);
+            const hourlyGeneration = calculateSolarGeneration(weatherData, prosumer);
+            
+            return {
+                hourlyGeneration,
+                totalDailyGeneration: hourlyGeneration.reduce((a, b) => a + b, 0),
+                weatherData
+            };
+        }
+
+        async function getWeatherData(location) {
+            // Demo weather data for major cities
+            const demoData = {
+                'New York': { solarIrradiance: [0,0,0,0,0,0,100,300,500,700,900,1000,1000,900,700,500,300,100,0,0,0,0,0,0] },
+                'London': { solarIrradiance: [0,0,0,0,0,0,50,200,400,600,800,900,900,800,600,400,200,50,0,0,0,0,0,0] },
+                'Tokyo': { solarIrradiance: [0,0,0,0,0,0,150,350,550,750,950,1050,1050,950,750,550,350,150,0,0,0,0,0,0] },
+                'Sydney': { solarIrradiance: [0,0,0,0,0,0,200,400,600,800,1000,1100,1100,1000,800,600,400,200,0,0,0,0,0,0] },
+                'Beijing': { solarIrradiance: [0,0,0,0,0,0,120,320,520,720,920,1020,1020,920,720,520,320,120,0,0,0,0,0,0] }
+            };
+            
+            return demoData[location] || demoData['New York'];
+        }
+
+        function calculateSolarGeneration(weatherData, prosumer) {
+            const hourlyGeneration = [];
+            const orientationFactors = {
+                'east': [0.8,0.9,1.0,0.9,0.8,0.6,0.4,0.3,0.2,0.1,0.1,0.1,0.1,0.2,0.3,0.4,0.6,0.8,0.9,1.0,0.9,0.8,0.6,0.4],
+                'southeast': [0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.6],
+                'south': [0.1,0.1,0.2,0.3,0.4,0.6,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.9,0.8,0.6,0.4,0.3,0.2,0.1],
+                'southwest': [0.4,0.6,0.8,0.9,1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.6],
+                'west': [0.2,0.1,0.1,0.1,0.1,0.2,0.3,0.4,0.6,0.8,0.9,1.0,0.9,0.8,0.6,0.4,0.3,0.2,0.1,0.1,0.1,0.1,0.2,0.3]
+            };
+            
+            const factors = orientationFactors[prosumer.orientation];
+            
+            for (let hour = 0; hour < 24; hour++) {
+                const irradiance = weatherData.solarIrradiance[hour];
+                const factor = factors[hour];
+                const area = prosumer.area / 1000; // Convert to 1000 m² base
+                const efficiency = prosumer.efficiency / 100;
+                
+                let generation = irradiance * area * efficiency * factor;
+                generation = Math.max(0, Math.min(prosumer.area * efficiency / 100, generation));
+                
+                hourlyGeneration.push(parseFloat(generation.toFixed(3)));
+            }
+            
+            return hourlyGeneration;
+        }
+
+        function displayPredictions() {
+            const resultsDiv = document.getElementById('predictionResults');
+            let html = '<div class="space-y-8">';
+            
+            prosumers.forEach(prosumer => {
+                const prediction = predictions[prosumer.id];
+                html += `
+                    <div class="bg-gray-50 rounded-2xl p-6">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">${prosumer.name} - ${prosumer.location} - 24h Generation Forecast</h3>
+                        <div class="bg-white rounded-xl p-6 mb-4">
+                            <div class="flex items-end justify-center space-x-1 h-64">
+                `;
+                
+                prediction.hourlyGeneration.forEach((value, hour) => {
+                    const maxValue = Math.max(...prediction.hourlyGeneration);
+                    const height = maxValue > 0 ? (value / maxValue) * 200 : 0;
+                    const color = value > 0 ? 'bg-blue-500' : 'bg-gray-300';
+                    
+                    html += `
+                        <div class="hourly-bar ${color} w-6 rounded-t-sm relative" style="height: ${height}px;" title="Hour ${hour}: ${value} kWh">
+                        </div>
+                    `;
+                });
+                
+                html += `
+                            </div>
+                            <div class="text-center text-gray-600 mt-4">
+                                Hour: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+                            </div>
+                            <div class="text-center mt-4">
+                                <span class="text-2xl font-bold text-green-600">
+                                    Total Daily Generation: ${prediction.totalDailyGeneration.toFixed(2)} kWh
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+            document.getElementById('predictionCard').classList.remove('hidden');
+            
+            // Auto-trigger optimization
+            setTimeout(() => {
+                executeOptimization();
+            }, 1000);
+        }
+
+        function executeOptimization() {
+            if (Object.keys(predictions).length === 0) {
+                alert('Please generate predictions first!');
+                return;
+            }
+
+            optimizationResults = optimizeTrading();
+            displayOptimization();
+            
+            setTimeout(() => {
+                simulateVPP();
+            }, 1000);
+        }
+
+        function optimizeTrading() {
+            const results = { trades: [], totalCost: 0, totalRevenue: 0, prosumerNetPositions: {} };
+            const buyers = prosumers.filter(p => p.role === 'prosumer' && p.maxBuy > 0);
+            const sellers = prosumers.filter(p => p.role === 'prosumer' && p.maxSell > 0);
+
+            // Calculate net positions
+            prosumers.forEach(prosumer => {
+                const generation = predictions[prosumer.id]?.totalDailyGeneration || 0;
+                const demand = 10; // Assume 10 kWh daily demand
+                results.prosumerNetPositions[prosumer.id] = generation - demand;
+            });
+
+            buyers.forEach(buyer => {
+                sellers.forEach(seller => {
+                    if (buyer.id !== seller.id) {
+                        const tradeAmount = Math.min(buyer.maxBuy, seller.maxSell, 5);
+                        if (tradeAmount > 0) {
+                            const price = (buyer.price + seller.price) / 2;
+                            results.trades.push({
+                                from: seller.id,
+                                to: buyer.id,
+                                amount: tradeAmount,
+                                price: price,
+                                cost: tradeAmount * price
+                            });
+                            results.totalCost += tradeAmount * price;
+                            results.totalRevenue += tradeAmount * price;
+                        }
+                    }
+                });
+            });
+
+            return results;
+        }
+
+        function displayOptimization() {
+            const resultsDiv = document.getElementById('optimizationResults');
+            
+            let html = `
+                <div class="space-y-6">
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-xl font-bold mb-4">Trading Matrix</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-gray-200">
+                                        <th class="px-4 py-2 text-left">From</th>
+                                        <th class="px-4 py-2 text-left">To</th>
+                                        <th class="px-4 py-2 text-left">Amount (kWh)</th>
+                                        <th class="px-4 py-2 text-left">Price ($/kWh)</th>
+                                        <th class="px-4 py-2 text-left">Total ($)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            optimizationResults.trades.forEach(trade => {
+                const fromName = prosumers.find(p => p.id === trade.from)?.name || trade.from;
+                const toName = prosumers.find(p => p.id === trade.to)?.name || trade.to;
+                
+                html += `
+                    <tr class="border-b">
+                        <td class="px-4 py-2">${fromName}</td>
+                        <td class="px-4 py-2">${toName}</td>
+                        <td class="px-4 py-2">${trade.amount}</td>
+                        <td class="px-4 py-2">$${trade.price.toFixed(3)}</td>
+                        <td class="px-4 py-2">$${trade.cost.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                        <h4 class="text-xl font-bold text-green-800 mb-4">Optimization Summary</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-600">${optimizationResults.trades.length}</div>
+                                <div class="text-green-700">Total Trades</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-600">${optimizationResults.trades.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</div>
+                                <div class="text-green-700">Total Volume (kWh)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-600">$${optimizationResults.totalCost.toFixed(2)}</div>
+                                <div class="text-green-700">Total Value</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function simulateVPP() {
+            vppResults = {
+                batterySchedule: [],
+                externalTrades: [],
+                totalExternalBuy: 0,
+                totalExternalSell: 0,
+                prosumerFinalPrices: {}
+            };
+
+            // VPP configuration
+            const vppConfig = {
+                buyPrice: 0.35, // $/kWh from retailer
+                sellPrice: 0.22, // $/kWh to retailer
+                batteryCapacity: 5, // kWh
+                batteryEfficiency: 0.9 // 90%
+            };
+
+            // Calculate final prices
+            prosumers.forEach(prosumer => {
+                const netPosition = optimizationResults.prosumerNetPositions[prosumer.id] || 0;
+                
+                if (netPosition === 0) {
+                    vppResults.prosumerFinalPrices[prosumer.id] = prosumer.price;
+                } else if (netPosition > 0) {
+                    vppResults.prosumerFinalPrices[prosumer.id] = vppConfig.sellPrice;
+                } else {
+                    vppResults.prosumerFinalPrices[prosumer.id] = vppConfig.buyPrice;
+                }
+            });
+
+            // Simulate battery operations
+            let batteryLevel = vppConfig.batteryCapacity / 2;
+            for (let hour = 0; hour < 24; hour++) {
+                const totalNet = Object.values(optimizationResults.prosumerNetPositions).reduce((sum, pos) => sum + pos, 0);
+                const hourlyVariation = Math.sin((hour - 6) * Math.PI / 12) * 0.3;
+                const hourlyNet = totalNet * (1 + hourlyVariation);
+                
+                let action = 'idle';
+                let change = 0;
+                
+                if (hourlyNet > 0 && batteryLevel < vppConfig.batteryCapacity) {
+                    action = 'charge';
+                    change = Math.min(hourlyNet, vppConfig.batteryCapacity - batteryLevel);
+                    batteryLevel += change * vppConfig.batteryEfficiency;
+                } else if (hourlyNet < 0 && batteryLevel > 0) {
+                    action = 'discharge';
+                    change = Math.min(-hourlyNet, batteryLevel);
+                    batteryLevel -= change / vppConfig.batteryEfficiency;
+                }
+                
+                vppResults.batterySchedule.push({
+                    hour,
+                    action,
+                    change,
+                    level: Math.max(0, Math.min(vppConfig.batteryCapacity, batteryLevel))
+                });
+            }
+
+            // Calculate external trades
+            const totalNetPosition = Object.values(optimizationResults.prosumerNetPositions).reduce((sum, pos) => sum + pos, 0);
+            const batteryContribution = vppResults.batterySchedule.reduce((sum, schedule) => {
+                if (schedule.action === 'charge') return sum - schedule.change;
+                if (schedule.action === 'discharge') return sum + schedule.change;
+                return sum;
+            }, 0);
+            
+            const finalNetPosition = totalNetPosition + batteryContribution;
+            
+            if (finalNetPosition > 0) {
+                vppResults.externalTrades.push({
+                    type: 'sell',
+                    amount: finalNetPosition,
+                    price: vppConfig.sellPrice,
+                    total: finalNetPosition * vppConfig.sellPrice
+                });
+                vppResults.totalExternalSell = finalNetPosition;
+            } else if (finalNetPosition < 0) {
+                vppResults.externalTrades.push({
+                    type: 'buy',
+                    amount: -finalNetPosition,
+                    price: vppConfig.buyPrice,
+                    total: -finalNetPosition * vppConfig.buyPrice
+                });
+                vppResults.totalExternalBuy = -finalNetPosition;
+            }
+
+            displayVPPResults();
+            document.getElementById('blockchainCard').classList.remove('hidden');
+        }
+
+        function displayVPPResults() {
+            const resultsDiv = document.getElementById('vppResults');
+            
+            let html = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-center">
+                            <div class="text-3xl font-bold text-blue-600">${vppResults.batterySchedule.length}</div>
+                            <div class="text-blue-700">Hours Simulated</div>
+                        </div>
+                        <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
+                            <div class="text-3xl font-bold text-green-600">${vppResults.batterySchedule.filter(s => s.action !== 'idle').length}</div>
+                            <div class="text-green-700">Battery Actions</div>
+                        </div>
+                        <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 text-center">
+                            <div class="text-3xl font-bold text-purple-600">5.0</div>
+                            <div class="text-purple-700">Battery Capacity (kWh)</div>
+                        </div>
+                        <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6 text-center">
+                            <div class="text-3xl font-bold text-yellow-600">90%</div>
+                            <div class="text-yellow-700">Battery Efficiency</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-xl font-bold mb-4">Final Settlement Prices</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-gray-200">
+                                        <th class="px-4 py-2 text-left">Prosumer</th>
+                                        <th class="px-4 py-2 text-left">Original Price ($/kWh)</th>
+                                        <th class="px-4 py-2 text-left">Final Price ($/kWh)</th>
+                                        <th class="px-4 py-2 text-left">Net Position (kWh)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            prosumers.forEach(prosumer => {
+                const netPosition = optimizationResults.prosumerNetPositions[prosumer.id] || 0;
+                const finalPrice = vppResults.prosumerFinalPrices[prosumer.id] || prosumer.price;
+                
+                html += `
+                    <tr class="border-b">
+                        <td class="px-4 py-2 font-semibold">${prosumer.name}</td>
+                        <td class="px-4 py-2">$${prosumer.price.toFixed(3)}</td>
+                        <td class="px-4 py-2 font-bold text-green-600">$${finalPrice.toFixed(3)}</td>
+                        <td class="px-4 py-2 ${netPosition > 0 ? 'text-green-600' : netPosition < 0 ? 'text-red-600' : 'text-gray-600'}">
+                            ${netPosition > 0 ? '+' : ''}${netPosition.toFixed(2)}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6">
+                        <h4 class="text-xl font-bold text-indigo-800 mb-4">VPP External Trading</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-600">${vppResults.totalExternalBuy.toFixed(2)} kWh</div>
+                                <div class="text-red-700">Total External Buy</div>
+                                <div class="text-sm text-gray-600">at $${0.35}/kWh</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">${vppResults.totalExternalSell.toFixed(2)} kWh</div>
+                                <div class="text-green-700">Total External Sell</div>
+                                <div class="text-sm text-gray-600">at $${0.22}/kWh</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+            
+            // Auto-trigger blockchain
+            setTimeout(() => {
+                submitToBlockchain();
+            }, 1000);
+        }
+
+        function submitToBlockchain() {
+            if (!walletSigner) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+
+            if (!optimizationResults.trades || optimizationResults.trades.length === 0) {
+                alert('No trades to submit to blockchain!');
+                return;
+            }
+
+            const transactions = [];
+            optimizationResults.trades.forEach((trade, index) => {
+                const transaction = {
+                    hash: '0x' + Math.random().toString(16).substr(2, 64),
+                    from: trade.from,
+                    to: trade.to,
+                    amount: trade.amount,
+                    price: trade.price,
+                    gasUsed: Math.floor(Math.random() * 100000) + 50000,
+                    timestamp: new Date().toISOString(),
+                    status: 'confirmed'
+                };
+                transactions.push(transaction);
+            });
+            
+            displayBlockchainResults(transactions);
+            alert('All trades submitted to blockchain successfully!');
+        }
+
+        function displayBlockchainResults(transactions) {
+            const resultsDiv = document.getElementById('blockchainResults');
+            
+            let html = `
+                <div class="space-y-6">
+                    <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                        <h4 class="text-xl font-bold text-green-800 mb-4">Blockchain Transaction Status</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-600">${transactions.length}</div>
+                                <div class="text-green-700">Total Transactions</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-600">Confirmed</div>
+                                <div class="text-green-700">Status</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-600">${new Date().toLocaleTimeString()}</div>
+                                <div class="text-green-700">Timestamp</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-xl font-bold mb-4">Transaction Details</h4>
+                        <div class="space-y-4">
+            `;
+            
+            transactions.forEach((tx, index) => {
+                const fromName = prosumers.find(p => p.id === tx.from)?.name || tx.from;
+                const toName = prosumers.find(p => p.id === tx.to)?.name || tx.to;
+                
+                html += `
+                    <div class="bg-white border-2 border-gray-200 rounded-xl p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                            <div><span class="font-semibold">Hash:</span> <span class="font-mono">${tx.hash.substring(0, 10)}...</span></div>
+                            <div><span class="font-semibold">From:</span> ${fromName}</div>
+                            <div><span class="font-semibold">To:</span> ${toName}</div>
+                            <div><span class="font-semibold">Amount:</span> ${tx.amount} kWh</div>
+                            <div><span class="font-semibold">Price:</span> $${tx.price.toFixed(3)}</div>
+                            <div><span class="font-semibold">Gas Used:</span> ${tx.gasUsed}</div>
+                            <div><span class="font-semibold">Status:</span> <span class="text-green-600 font-bold">${tx.status}</span></div>
+                            <div><span class="font-semibold">Time:</span> ${new Date(tx.timestamp).toLocaleTimeString()}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
