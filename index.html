@@ -55,6 +55,9 @@
                     <button onclick="generatePrediction()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
                         🔮 Generate Predictions
                     </button>
+                    <button onclick="testPrediction()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                        🧪 Test Prediction
+                    </button>
                 </div>
             </div>
 
@@ -170,6 +173,36 @@
             document.getElementById('walletInfo').classList.toggle('hidden');
         });
 
+        // Test function for debugging
+        function testPrediction() {
+            console.log('🧪 Testing prediction system...');
+            console.log('📋 Current prosumers:', prosumers);
+            console.log('🔮 Current predictions:', predictions);
+            
+            // 检查DOM元素
+            const prosumerContainer = document.getElementById('prosumerContainer');
+            const predictionCard = document.getElementById('predictionCard');
+            const predictionResults = document.getElementById('predictionResults');
+            
+            console.log('📦 Prosumer container:', prosumerContainer);
+            console.log('🎴 Prediction card:', predictionCard);
+            console.log('📊 Prediction results:', predictionResults);
+            
+            // 检查表单元素
+            const forms = document.querySelectorAll('[id^="prosumer_"]');
+            console.log('📝 Found forms:', forms.length);
+            
+            forms.forEach((form, index) => {
+                console.log(`📋 Form ${index}:`, form.id);
+                const nameInput = document.getElementById(`${form.id}_name`);
+                const areaInput = document.getElementById(`${form.id}_area`);
+                console.log(`  - Name input:`, nameInput?.value);
+                console.log(`  - Area input:`, areaInput?.value);
+            });
+            
+            alert('🧪 Test completed! Check console for details.');
+        }
+
         // Prosumer Management
         function addProsumer() {
             prosumerCounter++;
@@ -266,7 +299,11 @@
 
         // Weather-based prediction
         async function generatePrediction() {
+            console.log('🔮 Starting prediction generation...');
+            
             const prosumerForms = document.querySelectorAll('[id^="prosumer_"]');
+            console.log('📋 Found prosumer forms:', prosumerForms.length);
+            
             if (prosumerForms.length === 0) {
                 alert('Please add at least one prosumer first!');
                 return;
@@ -275,44 +312,82 @@
             prosumers = [];
             prosumerForms.forEach((form, index) => {
                 const prosumerId = form.id;
+                console.log('🔍 Processing prosumer:', prosumerId);
+                
+                // 获取所有输入值，添加默认值保护
+                const name = document.getElementById(`${prosumerId}_name`)?.value || `Prosumer ${index + 1}`;
+                const area = parseFloat(document.getElementById(`${prosumerId}_area`)?.value) || 20;
+                const efficiency = parseFloat(document.getElementById(`${prosumerId}_efficiency`)?.value) || 18;
+                const orientation = document.getElementById(`${prosumerId}_orientation`)?.value || 'south';
+                const hasBattery = document.getElementById(`${prosumerId}_hasBattery`)?.value || 'false';
+                const batteryCapacity = parseFloat(document.getElementById(`${prosumerId}_batteryCapacity`)?.value) || 0;
+                const maxBuy = parseFloat(document.getElementById(`${prosumerId}_maxBuy`)?.value) || 10;
+                const maxSell = parseFloat(document.getElementById(`${prosumerId}_maxSell`)?.value) || 15;
+                const price = parseFloat(document.getElementById(`${prosumerId}_price`)?.value) || 0.12;
+                const role = document.getElementById(`${prosumerId}_role`)?.value || 'prosumer';
+                
                 const prosumer = {
                     id: prosumerId,
-                    name: document.getElementById(`${prosumerId}_name`).value || `Prosumer ${index + 1}`,
-                    location: 'Default City', // 使用默认城市，不需要用户输入
-                    area: parseFloat(document.getElementById(`${prosumerId}_area`).value) || 20,
-                    efficiency: parseFloat(document.getElementById(`${prosumerId}_efficiency`).value) || 18,
-                    orientation: document.getElementById(`${prosumerId}_orientation`).value,
-                    hasBattery: document.getElementById(`${prosumerId}_hasBattery`).value === 'true',
-                    batteryCapacity: parseFloat(document.getElementById(`${prosumerId}_batteryCapacity`).value) || 0,
-                    maxBuy: parseFloat(document.getElementById(`${prosumerId}_maxBuy`).value) || 10,
-                    maxSell: parseFloat(document.getElementById(`${prosumerId}_maxSell`).value) || 15,
-                    price: parseFloat(document.getElementById(`${prosumerId}_price`).value) || 0.12,
-                    role: document.getElementById(`${prosumerId}_role`).value
+                    name: name,
+                    location: 'Default City',
+                    area: area,
+                    efficiency: efficiency,
+                    orientation: orientation,
+                    hasBattery: hasBattery === 'true',
+                    batteryCapacity: batteryCapacity,
+                    maxBuy: maxBuy,
+                    maxSell: maxSell,
+                    price: price,
+                    role: role
                 };
+                
+                console.log('✅ Prosumer data:', prosumer);
                 prosumers.push(prosumer);
             });
+
+            console.log('📊 Total prosumers:', prosumerForms.length);
 
             // Generate weather-based predictions
             predictions = {};
             for (const prosumer of prosumers) {
+                console.log('🌤️ Generating prediction for:', prosumer.name);
                 predictions[prosumer.id] = await generateWeatherBasedPrediction(prosumer);
             }
 
+            console.log('🎯 Predictions completed:', predictions);
             displayPredictions();
             document.getElementById('optimizationCard').classList.remove('hidden');
             alert('AI predictions generated successfully!');
         }
 
         async function generateWeatherBasedPrediction(prosumer) {
-            // Simulate weather API call
-            const weatherData = await getWeatherData(prosumer.location);
-            const hourlyGeneration = calculateSolarGeneration(weatherData, prosumer);
+            console.log('🌤️ Starting weather prediction for:', prosumer.name);
             
-            return {
-                hourlyGeneration,
-                totalDailyGeneration: hourlyGeneration.reduce((a, b) => a + b, 0),
-                weatherData
-            };
+            try {
+                // Simulate weather API call
+                const weatherData = await getWeatherData(prosumer.location);
+                console.log('🌦️ Weather data received:', weatherData);
+                
+                const hourlyGeneration = calculateSolarGeneration(weatherData, prosumer);
+                console.log('⚡ Hourly generation calculated:', hourlyGeneration);
+                
+                const result = {
+                    hourlyGeneration,
+                    totalDailyGeneration: hourlyGeneration.reduce((a, b) => a + b, 0),
+                    weatherData
+                };
+                
+                console.log('📊 Prediction result:', result);
+                return result;
+            } catch (error) {
+                console.error('❌ Error in weather prediction:', error);
+                // 返回默认数据以防错误
+                return {
+                    hourlyGeneration: [0,0,0,0,0,0,1,2,3,4,5,6,6,5,4,3,2,1,0,0,0,0,0,0],
+                    totalDailyGeneration: 37,
+                    weatherData: { solarIrradiance: [0,0,0,0,0,0,1,2,3,4,5,6,6,5,4,3,2,1,0,0,0,0,0,0] }
+                };
+            }
         }
 
         async function getWeatherData(location) {
@@ -352,11 +427,27 @@
         }
 
         function displayPredictions() {
+            console.log('📊 Starting to display predictions...');
+            console.log('👥 Prosumers:', prosumers);
+            console.log('🔮 Predictions:', predictions);
+            
             const resultsDiv = document.getElementById('predictionResults');
+            if (!resultsDiv) {
+                console.error('❌ Could not find predictionResults element');
+                return;
+            }
+            
             let html = '<div class="space-y-8">';
             
             prosumers.forEach(prosumer => {
                 const prediction = predictions[prosumer.id];
+                console.log(`📈 Processing prediction for ${prosumer.name}:`, prediction);
+                
+                if (!prediction || !prediction.hourlyGeneration) {
+                    console.error(`❌ Missing prediction data for ${prosumer.name}`);
+                    return;
+                }
+                
                 html += `
                     <div class="bg-gray-50 rounded-2xl p-6">
                         <h3 class="text-2xl font-bold text-gray-800 mb-4">${prosumer.name} - 24h Solar Generation Forecast</h3>
@@ -392,7 +483,14 @@
             
             html += '</div>';
             resultsDiv.innerHTML = html;
-            document.getElementById('predictionCard').classList.remove('hidden');
+            
+            const predictionCard = document.getElementById('predictionCard');
+            if (predictionCard) {
+                predictionCard.classList.remove('hidden');
+                console.log('✅ Prediction card displayed');
+            } else {
+                console.error('❌ Could not find predictionCard element');
+            }
             
             // Auto-trigger optimization
             setTimeout(() => {
