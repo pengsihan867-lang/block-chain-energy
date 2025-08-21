@@ -23,13 +23,12 @@
     
     <!-- Wallet Connect Button -->
     <div class="fixed top-4 right-4 z-50">
-        <button id="walletConnectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
-            🔗 Connect Wallet
+        <button id="walletConnectBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors cursor-not-allowed opacity-75">
+            🎭 Demo Mode
         </button>
         <div id="walletInfo" class="hidden mt-2 bg-white p-3 rounded-lg shadow-lg">
-            <p class="text-sm text-gray-600">Connected: <span id="walletAddress" class="font-mono text-xs"></span></p>
-            <p class="text-sm text-gray-600">Network: <span id="walletNetwork" class="text-xs"></span></p>
-            <button id="disconnectBtn" class="text-red-600 text-xs hover:text-red-800 mt-1">Disconnect</button>
+            <p class="text-sm text-gray-600">🎭 Demo Mode - Blockchain simulation only</p>
+            <p class="text-sm text-gray-600">No real wallet connection required</p>
         </div>
     </div>
 
@@ -83,10 +82,10 @@
                 <div id="vppResults"></div>
             </div>
 
-            <!-- Module 5: Blockchain Integration -->
+            <!-- Module 5: Blockchain Simulation -->
             <div id="blockchainCard" class="bg-white rounded-3xl p-8 card-shadow hover-lift hidden">
                 <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-4 border-red-500 pb-4 flex items-center gap-3">
-                    ⛓️ Blockchain Transaction Status
+                    🎭 Blockchain Simulation (Demo Mode)
                 </h2>
                 <div id="blockchainResults"></div>
             </div>
@@ -106,7 +105,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             addProsumer();
-            initializeWallet();
+            // initializeWallet(); // 暂时禁用MetaMask初始化
         });
 
         // Wallet Integration
@@ -166,9 +165,10 @@
             }
         }
 
-        // Add event listeners
-        document.getElementById('walletConnectBtn').addEventListener('click', connectWallet);
-        document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+        // Add event listeners - 演示模式
+        document.getElementById('walletConnectBtn').addEventListener('click', function() {
+            document.getElementById('walletInfo').classList.toggle('hidden');
+        });
 
         // Prosumer Management
         function addProsumer() {
@@ -700,10 +700,11 @@
         }
 
         function submitToBlockchain() {
-            if (!walletSigner) {
-                alert('Please connect your wallet first!');
-                return;
-            }
+            // 移除钱包连接检查，允许模拟区块链交易
+            // if (!walletSigner) {
+            //     alert('Please connect your wallet first!');
+            //     return;
+            // }
 
             if (!optimizationResults.trades || optimizationResults.trades.length === 0) {
                 alert('No trades to submit to blockchain!');
@@ -726,7 +727,7 @@
             });
             
             displayBlockchainResults(transactions);
-            alert('All trades submitted to blockchain successfully!');
+            alert('🎭 Demo: All trades simulated on blockchain successfully!');
         }
 
         function displayBlockchainResults(transactions) {
@@ -735,7 +736,7 @@
             let html = `
                 <div class="space-y-6">
                     <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                        <h4 class="text-xl font-bold text-green-800 mb-4">Blockchain Transaction Status</h4>
+                        <h4 class="text-xl font-bold text-green-800 mb-4">🎭 Simulated Blockchain Transactions</h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="text-center">
                                 <div class="text-3xl font-bold text-green-600">${transactions.length}</div>
