@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ P2P Energy Trading System - Live Demo</title>
+    <title>⚡ P2P Energy Trading System - Interactive Demo</title>
     <style>
         * {
             margin: 0;
@@ -270,6 +270,30 @@
             100% { transform: scale(1); }
         }
 
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+            animation: slideInRight 0.5s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -289,7 +313,7 @@
     <div class="container">
         <div class="header">
             <h1>⚡ P2P Energy Trading System</h1>
-            <p>Live Demo - Blockchain + Machine Learning Powered Energy Exchange</p>
+            <p>Interactive Demo - Experience Blockchain + ML Energy Trading</p>
         </div>
 
         <div class="main-content">
@@ -320,7 +344,7 @@
                     <div class="form-group">
                         <label for="solar_radiation">Solar Radiation (W/m²)</label>
                         <input type="number" id="solar_radiation" name="solar_radiation" value="600" step="10" required>
-                        </div>
+                    </div>
                     <button type="submit" class="btn">🔮 Predict Energy Output</button>
                 </form>
                 <div id="predictionResult"></div>
@@ -386,16 +410,15 @@
     </div>
 
     <script>
-        // Demo data and state
+        // Global state
         let trades = [];
         let orders = [];
         let tradeCounter = 0;
         let orderCounter = 0;
 
-        // ML Model Simulation (Random Forest-like prediction)
+        // ML Model Simulation
         class SolarEnergyPredictor {
             constructor() {
-                // Simulated model weights (in real implementation, these would come from training)
                 this.weights = {
                     temperature: 0.15,
                     humidity: -0.08,
@@ -407,7 +430,6 @@
             }
 
             predict(temperature, humidity, wind_speed, cloud_cover, solar_radiation) {
-                // Simulate ML prediction with some randomness
                 let prediction = this.bias;
                 prediction += this.weights.temperature * (temperature - 20) / 10;
                 prediction += this.weights.humidity * (humidity - 50) / 100;
@@ -415,18 +437,14 @@
                 prediction += this.weights.cloud_cover * (cloud_cover - 50) / 100;
                 prediction += this.weights.solar_radiation * (solar_radiation - 500) / 1000;
                 
-                // Add some realistic randomness
+                // Add realistic randomness
                 prediction += (Math.random() - 0.5) * 2;
                 
-                // Ensure non-negative and realistic range
                 return Math.max(0, Math.min(25, prediction));
             }
         }
 
-        // Initialize ML predictor
-        const predictor = new SolarEnergyPredictor();
-
-        // Trading system simulation
+        // Trading System
         class TradingSystem {
             constructor() {
                 this.buyOrders = [];
@@ -450,14 +468,11 @@
                     this.sellOrders.push(order);
                 }
 
-                // Try to match orders
                 this.matchOrders();
-                
                 return order;
             }
 
             matchOrders() {
-                // Simple matching algorithm
                 for (let i = 0; i < this.buyOrders.length; i++) {
                     for (let j = 0; j < this.sellOrders.length; j++) {
                         const buyOrder = this.buyOrders[i];
@@ -466,7 +481,6 @@
                         if (buyOrder.status === 'active' && sellOrder.status === 'active' &&
                             buyOrder.price >= sellOrder.price) {
                             
-                            // Execute trade
                             const tradeAmount = Math.min(buyOrder.energyAmount, sellOrder.energyAmount);
                             const tradePrice = sellOrder.price;
 
@@ -496,14 +510,13 @@
                                 sellOrder.energyAmount -= tradeAmount;
                             }
 
-                            // Update global state
                             trades.push(trade);
                             updateDashboard();
+                            showNotification(`Trade executed! ${tradeAmount} kWh at ${(tradePrice / 1e15).toFixed(3)} ETH/kWh`);
                         }
                     }
                 }
 
-                // Clean up completed orders
                 this.buyOrders = this.buyOrders.filter(order => order.status === 'active');
                 this.sellOrders = this.sellOrders.filter(order => order.status === 'active');
             }
@@ -525,10 +538,22 @@
             }
         }
 
-        // Initialize trading system
+        // Initialize systems
+        const predictor = new SolarEnergyPredictor();
         const tradingSystem = new TradingSystem();
 
-        // Update dashboard
+        // Utility functions
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
         function updateDashboard() {
             document.getElementById('totalTrades').textContent = trades.length;
             document.getElementById('totalEnergy').textContent = tradingSystem.getTotalEnergy().toFixed(1);
@@ -538,7 +563,6 @@
             updateTradesList();
         }
 
-        // Update trades list
         function updateTradesList() {
             const tradesList = document.getElementById('tradesList');
             
@@ -561,20 +585,17 @@
             `).join('');
         }
 
-        // Prediction form submission
+        // Event Listeners
         document.getElementById('predictionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             
-            // Show loading
             const resultDiv = document.getElementById('predictionResult');
             resultDiv.innerHTML = '<div class="status"><div class="loading"></div> Processing prediction...</div>';
             
-            // Simulate processing time
             setTimeout(() => {
                 try {
-                    // Get prediction from ML model
                     const prediction = predictor.predict(
                         parseFloat(data.temperature),
                         parseFloat(data.humidity),
@@ -598,26 +619,24 @@
                             <div style="margin-top: 10px;">☀️ Solar Radiation: ${data.solar_radiation} W/m²</div>
                         </div>
                     `;
+                    
+                    showNotification(`Energy prediction: ${prediction.toFixed(2)} kWh`);
                 } catch (error) {
                     resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
                 }
             }, 1000);
         });
 
-        // Trading form submission
         document.getElementById('tradingForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             
-            // Show loading
             const resultDiv = document.getElementById('tradingResult');
             resultDiv.innerHTML = '<div class="status"><div class="loading"></div> Processing order...</div>';
             
-            // Simulate blockchain processing time
             setTimeout(() => {
                 try {
-                    // Place order in trading system
                     const order = tradingSystem.placeOrder(
                         data.user_type,
                         parseFloat(data.energy_amount),
@@ -637,8 +656,8 @@
                         </div>
                     `;
                     
-                    // Update dashboard
                     updateDashboard();
+                    showNotification(`Order #${order.id} placed successfully!`);
                     
                 } catch (error) {
                     resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
@@ -646,20 +665,26 @@
             }, 1500);
         });
 
-        // Initialize dashboard
+        // Initialize and demo
         updateDashboard();
 
-        // Auto-update dashboard every 5 seconds
+        // Auto-update dashboard
         setInterval(updateDashboard, 5000);
 
-        // Add some demo trades for better visualization
+        // Add demo data after 2 seconds
         setTimeout(() => {
-            // Simulate some initial market activity
             tradingSystem.placeOrder('seller', 15, 800000000000000);
             tradingSystem.placeOrder('buyer', 12, 900000000000000);
             tradingSystem.placeOrder('seller', 8, 750000000000000);
             updateDashboard();
         }, 2000);
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('P2P Energy Trading System Demo Loaded!');
+            console.log('Try changing the weather parameters and submitting predictions!');
+            console.log('Or place some buy/sell orders to see the trading system in action!');
+        });
     </script>
 </body>
 </html>
