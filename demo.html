@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ P2P Energy Trading System - Live Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #e8f5e8, #d4edda);
+            border-left: 5px solid #27ae60;
+            animation: slideIn 0.5s ease;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ffeaea, #f8d7da);
+            border-left: 5px solid #e74c3c;
+        }
+
+        .status {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 5px solid #2196f3;
+        }
+
+        .demo-section {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .demo-section h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            border-bottom: 3px solid #9b59b6;
+            padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .trades-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .trade-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .trade-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .trade-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .trade-type {
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .trade-amount {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .trade-time {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-animation {
+            animation: successPulse 0.6s ease;
+        }
+
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ P2P Energy Trading System</h1>
+            <p>Live Demo - Blockchain + Machine Learning Powered Energy Exchange</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Solar Energy Prediction -->
+            <div class="card">
+                <h2>🔮 Solar Energy Prediction</h2>
+                <form id="predictionForm">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="temperature">Temperature (°C)</label>
+                            <input type="number" id="temperature" name="temperature" value="25" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="humidity">Humidity (%)</label>
+                            <input type="number" id="humidity" name="humidity" value="60" min="0" max="100" required>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="wind_speed">Wind Speed (m/s)</label>
+                            <input type="number" id="wind_speed" name="wind_speed" value="3" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cloud_cover">Cloud Cover (%)</label>
+                            <input type="number" id="cloud_cover" name="cloud_cover" value="20" min="0" max="100" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="solar_radiation">Solar Radiation (W/m²)</label>
+                        <input type="number" id="solar_radiation" name="solar_radiation" value="600" step="10" required>
+                        </div>
+                    <button type="submit" class="btn">🔮 Predict Energy Output</button>
+                </form>
+                <div id="predictionResult"></div>
+            </div>
+
+            <!-- Energy Trading -->
+            <div class="card">
+                <h2>💱 Energy Trading Platform</h2>
+                <form id="tradingForm">
+                    <div class="form-group">
+                        <label for="user_type">User Type</label>
+                        <select id="user_type" name="user_type" required>
+                            <option value="buyer">🟢 Buyer</option>
+                            <option value="seller">🔴 Seller</option>
+                        </select>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="energy_amount">Energy Amount (kWh)</label>
+                            <input type="number" id="energy_amount" name="energy_amount" value="10" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="price">Price (Wei/kWh)</label>
+                            <input type="number" id="price" name="price" value="1000000000000000" step="100000000000000" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">💱 Place Order</button>
+                </form>
+                <div id="tradingResult"></div>
+            </div>
+        </div>
+
+        <!-- Live Demo Section -->
+        <div class="demo-section">
+            <h2>📊 Live Trading Dashboard</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTrades">0</div>
+                    <div class="stat-label">Total Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalEnergy">0</div>
+                    <div class="stat-label">Total Energy (kWh)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avgPrice">0</div>
+                    <div class="stat-label">Avg Price (ETH)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activeOrders">0</div>
+                    <div class="stat-label">Active Orders</div>
+                </div>
+            </div>
+
+            <h3>🔄 Recent Trades</h3>
+            <div class="trades-list" id="tradesList">
+                <div style="text-align: center; color: #6c757d; padding: 20px;">
+                    No trades yet. Start trading to see activity!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo data and state
+        let trades = [];
+        let orders = [];
+        let tradeCounter = 0;
+        let orderCounter = 0;
+
+        // ML Model Simulation (Random Forest-like prediction)
+        class SolarEnergyPredictor {
+            constructor() {
+                // Simulated model weights (in real implementation, these would come from training)
+                this.weights = {
+                    temperature: 0.15,
+                    humidity: -0.08,
+                    wind_speed: -0.12,
+                    cloud_cover: -0.20,
+                    solar_radiation: 0.45
+                };
+                this.bias = 8.5;
+            }
+
+            predict(temperature, humidity, wind_speed, cloud_cover, solar_radiation) {
+                // Simulate ML prediction with some randomness
+                let prediction = this.bias;
+                prediction += this.weights.temperature * (temperature - 20) / 10;
+                prediction += this.weights.humidity * (humidity - 50) / 100;
+                prediction += this.weights.wind_speed * (wind_speed - 5) / 10;
+                prediction += this.weights.cloud_cover * (cloud_cover - 50) / 100;
+                prediction += this.weights.solar_radiation * (solar_radiation - 500) / 1000;
+                
+                // Add some realistic randomness
+                prediction += (Math.random() - 0.5) * 2;
+                
+                // Ensure non-negative and realistic range
+                return Math.max(0, Math.min(25, prediction));
+            }
+        }
+
+        // Initialize ML predictor
+        const predictor = new SolarEnergyPredictor();
+
+        // Trading system simulation
+        class TradingSystem {
+            constructor() {
+                this.buyOrders = [];
+                this.sellOrders = [];
+                this.trades = [];
+            }
+
+            placeOrder(userType, energyAmount, price) {
+                const order = {
+                    id: ++orderCounter,
+                    userType: userType,
+                    energyAmount: energyAmount,
+                    price: price,
+                    timestamp: new Date(),
+                    status: 'active'
+                };
+
+                if (userType === 'buyer') {
+                    this.buyOrders.push(order);
+                } else {
+                    this.sellOrders.push(order);
+                }
+
+                // Try to match orders
+                this.matchOrders();
+                
+                return order;
+            }
+
+            matchOrders() {
+                // Simple matching algorithm
+                for (let i = 0; i < this.buyOrders.length; i++) {
+                    for (let j = 0; j < this.sellOrders.length; j++) {
+                        const buyOrder = this.buyOrders[i];
+                        const sellOrder = this.sellOrders[j];
+
+                        if (buyOrder.status === 'active' && sellOrder.status === 'active' &&
+                            buyOrder.price >= sellOrder.price) {
+                            
+                            // Execute trade
+                            const tradeAmount = Math.min(buyOrder.energyAmount, sellOrder.energyAmount);
+                            const tradePrice = sellOrder.price;
+
+                            const trade = {
+                                id: ++tradeCounter,
+                                buyer: buyOrder.userType,
+                                seller: sellOrder.userType,
+                                energyAmount: tradeAmount,
+                                price: tradePrice,
+                                timestamp: new Date(),
+                                buyOrderId: buyOrder.id,
+                                sellOrderId: sellOrder.id
+                            };
+
+                            this.trades.push(trade);
+
+                            // Update orders
+                            if (buyOrder.energyAmount === tradeAmount) {
+                                buyOrder.status = 'completed';
+                            } else {
+                                buyOrder.energyAmount -= tradeAmount;
+                            }
+
+                            if (sellOrder.energyAmount === tradeAmount) {
+                                sellOrder.status = 'completed';
+                            } else {
+                                sellOrder.energyAmount -= tradeAmount;
+                            }
+
+                            // Update global state
+                            trades.push(trade);
+                            updateDashboard();
+                        }
+                    }
+                }
+
+                // Clean up completed orders
+                this.buyOrders = this.buyOrders.filter(order => order.status === 'active');
+                this.sellOrders = this.sellOrders.filter(order => order.status === 'active');
+            }
+
+            getActiveOrders() {
+                return this.buyOrders.filter(o => o.status === 'active').length + 
+                       this.sellOrders.filter(o => o.status === 'active').length;
+            }
+
+            getTotalEnergy() {
+                return this.trades.reduce((sum, trade) => sum + trade.energyAmount, 0);
+            }
+
+            getAveragePrice() {
+                if (this.trades.length === 0) return 0;
+                const totalValue = this.trades.reduce((sum, trade) => sum + (trade.energyAmount * trade.price), 0);
+                const totalEnergy = this.trades.reduce((sum, trade) => sum + trade.energyAmount, 0);
+                return totalValue / totalEnergy;
+            }
+        }
+
+        // Initialize trading system
+        const tradingSystem = new TradingSystem();
+
+        // Update dashboard
+        function updateDashboard() {
+            document.getElementById('totalTrades').textContent = trades.length;
+            document.getElementById('totalEnergy').textContent = tradingSystem.getTotalEnergy().toFixed(1);
+            document.getElementById('avgPrice').textContent = (tradingSystem.getAveragePrice() / 1e15).toFixed(3) + ' ETH';
+            document.getElementById('activeOrders').textContent = tradingSystem.getActiveOrders();
+            
+            updateTradesList();
+        }
+
+        // Update trades list
+        function updateTradesList() {
+            const tradesList = document.getElementById('tradesList');
+            
+            if (trades.length === 0) {
+                tradesList.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px;">No trades yet. Start trading to see activity!</div>';
+                return;
+            }
+
+            tradesList.innerHTML = trades.slice(-5).reverse().map(trade => `
+                <div class="trade-item">
+                    <div class="trade-header">
+                        <span class="trade-type">${trade.buyer === 'buyer' ? '🟢 BUY' : '🔴 SELL'}</span>
+                        <span class="trade-amount">${trade.energyAmount} kWh</span>
+                    </div>
+                    <div class="trade-time">
+                        Price: ${(trade.price / 1e15).toFixed(3)} ETH/kWh | 
+                        Time: ${trade.timestamp.toLocaleTimeString()}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Prediction form submission
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Show loading
+            const resultDiv = document.getElementById('predictionResult');
+            resultDiv.innerHTML = '<div class="status"><div class="loading"></div> Processing prediction...</div>';
+            
+            // Simulate processing time
+            setTimeout(() => {
+                try {
+                    // Get prediction from ML model
+                    const prediction = predictor.predict(
+                        parseFloat(data.temperature),
+                        parseFloat(data.humidity),
+                        parseFloat(data.wind_speed),
+                        parseFloat(data.cloud_cover),
+                        parseFloat(data.solar_radiation)
+                    );
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result success-animation">
+                            <h4>🎯 Prediction Result</h4>
+                            <p><strong>Predicted Energy Output:</strong> <span style="font-size: 1.2em; color: #27ae60;">${prediction.toFixed(2)} kWh</span></p>
+                            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+                            <p><strong>Weather Conditions:</strong></p>
+                            <div class="grid-2" style="margin-top: 10px;">
+                                <div>🌡️ Temperature: ${data.temperature}°C</div>
+                                <div>💧 Humidity: ${data.humidity}%</div>
+                                <div>💨 Wind Speed: ${data.wind_speed} m/s</div>
+                                <div>☁️ Cloud Cover: ${data.cloud_cover}%</div>
+                            </div>
+                            <div style="margin-top: 10px;">☀️ Solar Radiation: ${data.solar_radiation} W/m²</div>
+                        </div>
+                    `;
+                } catch (error) {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                }
+            }, 1000);
+        });
+
+        // Trading form submission
+        document.getElementById('tradingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Show loading
+            const resultDiv = document.getElementById('tradingResult');
+            resultDiv.innerHTML = '<div class="status"><div class="loading"></div> Processing order...</div>';
+            
+            // Simulate blockchain processing time
+            setTimeout(() => {
+                try {
+                    // Place order in trading system
+                    const order = tradingSystem.placeOrder(
+                        data.user_type,
+                        parseFloat(data.energy_amount),
+                        parseFloat(data.price)
+                    );
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result success-animation">
+                            <h4>✅ Order Placed Successfully!</h4>
+                            <p><strong>Order ID:</strong> #${order.id}</p>
+                            <p><strong>User Type:</strong> ${data.user_type === 'buyer' ? '🟢 Buyer' : '🔴 Seller'}</p>
+                            <p><strong>Energy Amount:</strong> ${data.energy_amount} kWh</p>
+                            <p><strong>Price:</strong> ${(data.price / 1e15).toFixed(3)} ETH/kWh</p>
+                            <p><strong>Status:</strong> <span style="color: #27ae60;">Active</span></p>
+                            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+                            <p><em>Order submitted to blockchain. Matching with other orders...</em></p>
+                        </div>
+                    `;
+                    
+                    // Update dashboard
+                    updateDashboard();
+                    
+                } catch (error) {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                }
+            }, 1500);
+        });
+
+        // Initialize dashboard
+        updateDashboard();
+
+        // Auto-update dashboard every 5 seconds
+        setInterval(updateDashboard, 5000);
+
+        // Add some demo trades for better visualization
+        setTimeout(() => {
+            // Simulate some initial market activity
+            tradingSystem.placeOrder('seller', 15, 800000000000000);
+            tradingSystem.placeOrder('buyer', 12, 900000000000000);
+            tradingSystem.placeOrder('seller', 8, 750000000000000);
+            updateDashboard();
+        }, 2000);
+    </script>
+</body>
+</html>
