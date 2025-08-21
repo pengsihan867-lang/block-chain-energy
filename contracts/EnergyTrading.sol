@@ -169,7 +169,6 @@ contract EnergyTrading {
     // Helper function to find minimum
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
-        return a < b ? a : b;
     }
     
     // Fallback function to receive ETH
